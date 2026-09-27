@@ -17,7 +17,7 @@ const pct = (x: number) => {
   if (v < 1) return `${v.toFixed(1)}%`;
   return `${Math.round(v)}%`;
 };
-const title = (t: string) => t.toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase()).replace(/, Etc\.$/, ", etc.");
+const title = (t: string) => t.toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase()).replace(/, Etc\.$/, ", etc.").replace(/\bLlc\b/g, "LLC");
 const REPORT_DATE = "Oct 1, 2023";
 
 function bucket(s: Station, policy: Policy): Bucket {
