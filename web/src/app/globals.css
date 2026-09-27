@@ -52,10 +52,35 @@ a { color: var(--focus); text-underline-offset: 2px; }
 @media (max-width: 640px) { .titleblock { grid-template-columns: 1fr; } .titleblock .right { text-align: left; } }
 
 /* ---------- first screen ---------- */
-.lead { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: 40px; padding: 36px 0 48px; }
-@media (max-width: 1024px) { .lead { grid-template-columns: minmax(0, 1fr); gap: 24px; padding-top: 24px; } }
+.lead {
+  display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); column-gap: 44px; row-gap: 18px;
+  grid-template-areas: "head map" "rest map"; grid-template-rows: auto 1fr; padding: 36px 0 48px;
+}
+.lead-head { grid-area: head; }
+.mapfig { grid-area: map; }
+.lead-rest { grid-area: rest; }
+@media (max-width: 1024px) {
+  .lead { grid-template-columns: minmax(0, 1fr); grid-template-areas: "head" "map" "rest"; row-gap: 22px; padding-top: 24px; }
+}
+.interest { font-size: 16px; margin: 0 0 14px; color: var(--ink-2); }
+.interest strong { color: var(--ink); font-weight: 700; }
+.vintage { display: flex; flex-wrap: wrap; gap: 6px 22px; margin: 0; padding: 10px 0 0; list-style: none; border-top: 1px solid var(--rule); font-size: 14px; color: var(--ink); }
+.vintage span { color: var(--ink-3); margin-right: 6px; }
+.download { font-size: 15px; margin: 22px 0 0; color: var(--ink-2); }
+.download a { font-weight: 600; }
+.regionwrap { position: absolute; right: 1.3%; top: 1.6%; width: 33.3%; }
+.region { display: block; width: 100%; height: auto; }
+.rlabel { font: 500 10px var(--font-archivo), sans-serif; fill: var(--ink-2); paint-order: stroke; stroke: var(--land); stroke-width: 2.5px; }
+.rtitle { font: 700 12px var(--font-archivo), sans-serif; fill: var(--ink); paint-order: stroke; stroke: var(--water); stroke-width: 3px; }
+.contour.c.own { stroke-width: 3; }
+.contour.c.board { stroke-width: 2.4; stroke-dasharray: 1 6; }
+.contour.c.confirm { stroke-width: 2.4; stroke-dasharray: 10 6; }
+.contour.c.na { stroke-width: 1.6; }
+.contour.below { stroke: var(--ink-3); stroke-width: 1.6; stroke-dasharray: 2 4; opacity: .95; }
+.contour.muted { stroke: var(--ink-3); stroke-width: 1; opacity: .35; }
+.contour.r { stroke-width: 1 !important; }
 
-.answer { font-size: clamp(30px, 3.4vw, 46px); line-height: 1.08; font-weight: 600; margin: 0 0 18px; letter-spacing: -.005em; }
+.answer { font-size: clamp(28px, 2.9vw, 40px); line-height: 1.1; font-weight: 600; margin: 0 0 18px; letter-spacing: -.005em; }
 .answer .n { font-weight: 800; }
 .answer2 { font-size: clamp(19px, 1.7vw, 24px); line-height: 1.22; font-weight: 500; margin: 0 0 22px; color: var(--ink); }
 .answer2 .in { color: var(--contour); font-weight: 700; }
@@ -95,12 +120,12 @@ a { color: var(--focus); text-underline-offset: 2px; }
 .placelabel { font: 500 13px var(--font-archivo), sans-serif; fill: var(--ink-2); paint-order: stroke; stroke: var(--land); stroke-width: 3px; }
 .oaklabel { font: 700 15px var(--font-archivo), sans-serif; fill: var(--contour); paint-order: stroke; stroke: var(--land); stroke-width: 4px; }
 .contour.below { stroke: var(--ink-3); stroke-width: 1.2; stroke-dasharray: 2 3; opacity: .9; }
-.clabel { font: 700 13px var(--font-archivo), sans-serif; font-stretch: 85%; paint-order: stroke; stroke: var(--land); stroke-width: 4px; letter-spacing: .02em; }
+.clabel { font: 700 17px var(--font-archivo), sans-serif; font-stretch: 85%; paint-order: stroke; stroke: var(--land); stroke-width: 4px; letter-spacing: .02em; }
 .clabel.own, .clabel.board { fill: var(--contour); }
 .clabel.na { fill: var(--ink-3); }
 .clabel.confirm { fill: var(--open); }
-.clabel.none, .clabel.out { fill: var(--ink-2); }
-.clabel.selected { fill: var(--ink); font-size: 15px; }
+.clabel.none, .clabel.out, .clabel.below, .clabel.muted { fill: var(--ink-2); }
+.clabel.selected { fill: var(--ink); }
 .dim .clabel:not(.selected) { opacity: .3; }
 .mapfig { margin: 0; }
 .insetwrap { position: absolute; left: 2.4%; bottom: 2.6%; width: 36.7%; }
@@ -206,10 +231,9 @@ footer { border-top: 1.5px solid var(--ink); margin-top: 40px; padding: 18px 0 4
 
 @media (max-width: 640px) {
   .placelabel { font-size: 24px; }
-  .clabel { font-size: 26px; stroke-width: 6px; }
-  .clabel.selected { font-size: 28px; }
+  .clabel { font-size: 28px; stroke-width: 6px; }
   .oaklabel { font-size: 30px; stroke-width: 6px; }
-  .insetwrap { position: static; width: auto; border-top: 1.5px solid var(--ink); }
+  .regionwrap { position: static; width: auto; border-top: 1.5px solid var(--ink); }
   .answer2 { font-size: 19px; }
 }
 

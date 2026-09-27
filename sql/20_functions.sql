@@ -1,4 +1,6 @@
--- Query layer: every answer on the page comes out of these functions.
+-- EXPERIMENTAL, outside the Oakland audit. General query layer for drawn areas. Known limits: ACS estimates are
+-- used without their margins of error, and households and demographic counts are allocated with 2020 population
+-- weights. The audit itself uses sql/30_oakland_audit.sql (geo.zone_pop_in, geo.alloc_share).
 -- Input geometries are EPSG:4326/4269 GeoJSON-style polygons (what MapLibre draw returns); work happens in 5070.
 
 -- 1. Population / households of ANY polygon, apportioned from 2020 blocks (pop, housing units) and

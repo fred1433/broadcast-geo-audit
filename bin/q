@@ -1,2 +1,3 @@
 #!/bin/sh
-exec /opt/homebrew/opt/postgresql@18/bin/psql -h /tmp -p 5438 -U geo -d bay -X -P pager=off "$@"
+# psql against the audit database. Override PSQL (client binary) and GEO_DSN (libpq connection string).
+exec "${PSQL:-psql}" "${GEO_DSN:-host=/tmp port=5438 user=geo dbname=bay}" -X -q -P pager=off -v ON_ERROR_STOP=1 "$@"

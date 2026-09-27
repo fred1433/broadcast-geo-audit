@@ -7,7 +7,7 @@ for (const [w, h] of [[1440, 900], [390, 844]]) {
   await p.screenshot({ path: `${out}_${w}_top.png` });
   await p.screenshot({ path: `${out}_${w}_full.png`, fullPage: true });
   if (process.argv[4]) {
-    await p.getByRole("button", { name: /Certified export/ }).click();
+    await p.getByRole("button", { name: /Certification-required view/ }).click();
     await p.screenshot({ path: `${out}_${w}_cert.png` });
     await p.getByRole("button", { name: /Research shortlist/ }).click();
     await p.locator(".row button").first().click();

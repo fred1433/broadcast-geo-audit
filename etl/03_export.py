@@ -12,7 +12,7 @@ from shapely.geometry import box, mapping
 
 ROOT = os.path.join(os.path.dirname(__file__), "..")
 OUT = os.path.join(ROOT, "web", "src", "data")
-DSN = "host=/tmp port=5438 user=geo dbname=bay"
+DSN = os.environ.get("GEO_DSN", "host=/tmp port=5438 user=geo dbname=bay")
 VIEW = box(-124.2, 36.2, -120.4, 39.4)  # base-map extraction window (lon/lat)
 TOL = 0.0012  # ~120 m display simplification; analysis never uses these shapes
 
@@ -70,6 +70,13 @@ def main():
         cur.execute(sql)
         return list(cur.fetchone().values())
 
+    man = json.load(open(os.path.join(ROOT, "manifest", "sources.json")))["sources"]
+    byf = {m["file"]: m for m in man}
+    vint = {"contours": byf["FM_service_contour_current.zip"]["vintage"],
+            "ownership": byf["fcc323_2023.zip"]["vintage"],
+            "residents": "2020 Census (P.L. 94-171 block counts)",
+            "stations": byf["fmq_CA.txt"]["vintage"]}
+
     zone_est, zone_low, zone_high = val("select round(sum(pop*w)) a, sum(pop) filter (where inside) b, sum(pop) filter (where w>0) c from geo.audit_block")
     edge_n, edge_pop = val("select count(*) a, sum(pop) b from geo.audit_block where w = 0")
     shortlist_union = val("""select est, low, high from geo.zone_pop_in((select ST_Union(c.geom_aea) from geo.audit_contour c
@@ -105,6 +112,10 @@ def main():
         "rebroadcast_listed": sum(1 for s in stations if s["service"] in ("FX", "FB")),
         "boundary_uncertain": [s["callsign"] for s in fm if s["share_low"] < 0.5 <= s["share_high"]],
         "built": date.today().isoformat(),
+        "vintages": vint,
+        "certified_denominator": len(qual),
+        "certified_not_established": sum(s["policy_certified"].startswith("not established") for s in qual),
+        "krzz_alone": next(s["share_est"] for s in fm if s["callsign"] == "KRZZ"),
     }
 
     contours_by_id = {s["facility_id"]: s["contour"] for s in stations}
@@ -140,6 +151,23 @@ def main():
         geo["places"].append({"name": name, "lon": lon, "lat": lat})
 
     contours = {s["facility_id"]: s.pop("contour") for s in stations}  # server-side only (map paths)
+
+    # decision table: every facility screened, with its reasons and source references
+    import csv
+    pub = os.path.join(ROOT, "web", "public")
+    os.makedirs(pub, exist_ok=True)
+    cols = ["facility_id", "callsign", "service", "frequency", "licensee_fcc_query_2026", "community_of_license",
+            "licensed_application_ids", "contour_dbu", "residents_low", "residents_est", "residents_high", "share_est",
+            "geo_status", "report_file", "workbook", "row_t12", "row_t34", "licensee_in_report", "callsign_in_report",
+            "evidence", "entity_type", "policy_research", "policy_certified"]
+    with open(os.path.join(pub, "oakland_fm_audit_decisions.csv"), "w", newline="") as f:
+        w = csv.writer(f)
+        w.writerow(cols + ["contour_source", "ownership_source"])
+        for s in stations:
+            w.writerow([s.get(c) if s.get(c) is not None else "" for c in cols] + [
+                f"{vint['contours']}: {byf['FM_service_contour_current.zip']['url']}",
+                f"{vint['ownership']}: {byf['fcc323e_2023.zip' if 'Noncommercial' in (s.get('report_file') or '') else 'fcc323_2023.zip']['url']}"
+                if s.get("report_file") else "none in the 2023 report"])
     with open(os.path.join(OUT, "audit.json"), "w") as f:
         json.dump({"summary": summary, "stations": stations}, f, separators=(",", ":"))
     with open(os.path.join(OUT, "contours.json"), "w") as f:

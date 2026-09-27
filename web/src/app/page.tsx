@@ -11,6 +11,7 @@ const SOURCES: [string, string, string][] = [
   ["Census TIGER/Line, places and 2020 blocks with counts", "Release of Sept 2025; boundaries as of Jan 1, 2025; counts from the 2020 Census", "US government work, cite the Census Bureau"],
   ["Census cartographic boundaries, counties", "2024 release (display only)", "US government work"],
   ["IRS exempt organizations (via ProPublica Nonprofit Explorer)", "Retrieved Sept 27, 2026 (one record: Friends of KEXP)", "Public record"],
+  ["Run manifest: every input with URL, vintage and SHA-256; FCC inputs kept as extracts", "This run", "In the repository (manifest/, evidence/)"],
   ["Nielsen DMA", "Not used", "Licensed data required"],
   ["Medill State of Local News", "Not used", "No suitable reuse permission established; excluded"],
 ];
@@ -19,16 +20,15 @@ const REPO = "https://github.com/fred1433/broadcast-geo-audit";
 
 const TESTS = [
   "Block counts reproduce the published 2020 totals of all nine Bay Area counties and of Oakland (440,646)",
-  "Owners and boards are never merged: the four reported stations split two and two",
-  "The certified export keeps only for-profit candidates; nonprofits and public bodies are marked not applicable",
-  "KEXC's 2023 row is read with its licensee of that date (KREV, a bankruptcy estate), not today's",
-  "A shape that meets the city at a single point intersects it and holds nobody (synthetic case)",
+  "Allocation uses the joint intersection of block, city and contour; a block split between city and contour gets nobody (synthetic case)",
+  "A shape that meets a block at a single point is first proven to touch, then shown to receive nobody (synthetic case)",
   "284 neighboring blocks that share only an edge with Oakland add no one to any count",
+  "Owners and governing boards are never merged: the four reported stations split two and two",
+  "Across all 34 qualifying stations, every nonprofit or public body is out of scope for ownership-based certification",
+  "KEXC's 2023 row is read with its licensee of that date (KREV, a bankruptcy estate), not today's",
   "Every audited contour is the licensed record of its own facility; the two where the largest record differs are pinned",
   "Contour thresholds checked against the FCC distance calculator on two stations (54 dBu class B, 60 dBu reserved band)",
-  "Noncommercial filings are always labelled as board votes, never as equity",
-  "A superseded licensee or a missing filing stays unresolved; it never becomes \"not diverse\"",
-  "The certified-export policy admits nobody from FCC sources",
+  "A different licensee name or a missing filing stays unresolved; it never becomes \"not diverse\"",
   "The union of contours never exceeds the city; the sum does",
 ];
 
@@ -44,7 +44,7 @@ export default function Page() {
         </div>
         <div className="right">
           <p>Prepared {new Date(S.built + "T12:00:00").toLocaleDateString("en-US", { day: "numeric", month: "long", year: "numeric" })}</p>
-          <p>Public FCC and Census records only</p>
+          <p>Built from public records; sources below</p>
         </div>
       </header>
 
@@ -61,8 +61,8 @@ export default function Page() {
           </li>
           <li>
             <span className="fig num">2 of 4</span>
-            <h3>A board is not an owner</h3>
-            <p>KQED-FM and KPFA are nonprofits and file Form 323-E, which reports their governing board. Their women majority is governance. Ownership-based certifications (WBENC, NMSDC) cover for-profit businesses, so these two are outside their scope, not waiting for them.</p>
+            <h3>Governance is not ownership</h3>
+            <p>KQED-FM and KPFA are nonprofits and file Form 323-E, which reports governing voting interests. Their female majority is governance, not equity ownership. Ownership-based certifications (WBENC, NMSDC&apos;s MBE) cover for-profit businesses, so these two are outside their scope, not waiting for them.</p>
           </li>
           <li>
             <span className="fig num"><s>{S.touching}</s> {S.qualifying}</span>
@@ -82,7 +82,12 @@ export default function Page() {
           <li>
             <span className="fig num">Oct 1, 2023</span>
             <h3>Filings age</h3>
-            <p>The ownership data is a snapshot as of that date. The FCC waived the 2025 biennial filing and set the next deadline at June 1, 2027 (DA 25-671), so no newer snapshot exists. Summed station by station, the reported stations hold {fmt(S.shortlist_sum)} residents; their union holds Oakland once, {fmt(S.shortlist_union.est)}.</p>
+            <p>This audit uses the synchronized ownership snapshot of October 1, 2023. The FCC waived the 2025 biennial round (DA 25-671). Later individual filings and ownership transactions are not comprehensively reviewed here, and a licensee name that still matches is not a check of current ownership.</p>
+          </li>
+          <li>
+            <span className="fig num"><s>{fmt(S.shortlist_sum)}</s> {fmt(S.shortlist_union.est)}</span>
+            <h3>Contours overlap</h3>
+            <p>Summed station by station, the four reported stations hold more people than Oakland has; their union holds the city once. KRZZ alone already covers {Math.round(S.krzz_alone * 100)}% of it, so the union adds no reach: it only keeps the count honest.</p>
           </li>
         </ul>
       </section>
@@ -95,24 +100,25 @@ export default function Page() {
             <h3>Method</h3>
             <ul>
               <li>Analysis in EPSG:5070 (Albers equal-area). Display shapes are simplified copies; no count is ever taken from them.</li>
-              <li>Residents come from 2020 Census blocks, allocated by the share of each block inside the contour and the city. Blocks carry disclosure-avoidance noise and are meant to be added up, which is how they are used here.</li>
+              <li>Residents come from 2020 Census blocks, allocated by the share of each block&apos;s area that lies inside both the city and the contour. Blocks carry disclosure-avoidance noise and are meant to be added up, which is how they are used here. Low and high figures are allocation bounds, not confidence intervals.</li>
               <li>Contours are the FCC&apos;s predicted protected contours: 54 dBu for class B, 57 dBu for B1, 60 dBu otherwise and for every reserved-band noncommercial station. A prediction, not a measurement of reception.</li>
               <li>AM is out of scope: the FCC publishes no comparable contour file. Television and DMA assignment are separate questions and are not mixed in.</li>
               <li>Geographies are joined by identifier (place 0653000), never by name. ZIP codes are not used; where a ZIP question comes up, a ZCTA is labelled as a ZCTA.</li>
             </ul>
             <h3 style={{ marginTop: 26 }}>The rule, as it runs</h3>
-            <pre className="sql">{`-- residents of Oakland inside one contour g
-select round(sum(b.pop * b.w * f.frac))
-from   geo.audit_block b      -- 2020 blocks; w = share inside Oakland
-cross join lateral (
-  select case when ST_Within(b.geom_aea, g) then 1.0
-              else ST_Area(ST_Intersection(b.geom_aea, g))
-                   / ST_Area(b.geom_aea) end as frac) f
-where  ST_Intersects(b.geom_aea, g);
+            <pre className="sql">{`-- share of a block allocated to city AND contour
+create function geo.alloc_share(block, zone, target) as
+  ST_Area(ST_Intersection(ST_Intersection(block, zone), target))
+  / ST_Area(block);
 
--- g is the facility's LICENSED contour (status LIC, matched
--- by LMS application id), never the largest one on file.
--- The station qualifies when the result is >= 50% of 440,646.`}</pre>
+-- residents of Oakland inside one licensed contour g
+select sum(b.pop * ST_Area(ST_Intersection(b.geom_in, g))
+                 / ST_Area(b.geom_aea))
+from   geo.audit_block b   -- 2020 blocks; geom_in = part inside Oakland
+where  ST_Intersects(b.geom_in, g);
+
+-- g is the LICENSED contour (status LIC, matched by LMS id),
+-- never the largest on file. Qualifies at >= 50% of 440,646.`}</pre>
           </div>
           <div>
             <h3>Sources</h3>
@@ -127,9 +133,9 @@ where  ST_Intersects(b.geom_aea, g);
             <h3 style={{ marginTop: 26 }}>Checks that run with it</h3>
             <ul>{TESTS.map((t) => <li key={t}>{t}</li>)}</ul>
             <h3 style={{ marginTop: 26 }}>Where your data joins</h3>
-            <p>Three empty tables wait for what you already hold: a county to DMA table loaded from your Nielsen license, an outlet-coverage table keyed on your own outlet identifiers (where a newspaper&apos;s declared counties sit next to a station&apos;s contour), and a certification table with scheme, certificate, validity and the date it was verified.</p>
+            <p>Facility, outlet, licensed entity, ownership entity and certified supplier are five different things; this audit only reaches the first three. Three empty tables mark where your records attach: a partial, county-level DMA placeholder for your Nielsen license, an outlet-coverage table keyed on your own outlet identifiers, and a certification table with issuer, credential type, certified entity, validity and verification date. Linking an outlet to a certified entity is a reviewed decision with its own effective dates, never an automatic join.</p>
             <h3 style={{ marginTop: 26 }}>Code and tests</h3>
-            <p>The loading scripts, the PostGIS model, the audit queries and the {TESTS.length} checks above are public, with the steps to rebuild everything from the government files: <a href={REPO}>{REPO.replace("https://", "")}</a>.</p>
+            <p>The loading scripts, the PostGIS model, the audit queries and the checks above are public. The repository separates reproducing this run (inputs pinned by hash, FCC files kept as extracts) from refreshing it with today&apos;s FCC data: <a href={REPO}>{REPO.replace("https://", "")}</a>.</p>
           </div>
         </div>
       </section>

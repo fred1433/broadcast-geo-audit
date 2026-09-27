@@ -1,9 +1,11 @@
 """Tests of the Oakland FM audit: geography accounting, media evidence, and the claims the page makes.
 Synthetic cases are labelled as such; everything else runs on the real frozen data."""
+import os
+
 import psycopg
 import pytest
 
-DSN = "host=/tmp port=5438 user=geo dbname=bay"
+DSN = os.environ.get("GEO_DSN", "host=/tmp port=5438 user=geo dbname=bay")
 
 
 @pytest.fixture(scope="module")
@@ -35,15 +37,24 @@ def test_one_row_per_facility_no_join_duplication(cur):
     assert a == b == c
 
 
-def test_synthetic_single_point_touch_does_not_qualify(cur):
-    # SYNTHETIC: a square that shares exactly one corner with a block of the zone intersects it, yet holds nobody
-    touches, share = one(cur, """
-        with blk as (select geom_aea from geo.audit_block where inside order by geoid limit 1),
-        corner as (select ST_PointN(ST_ExteriorRing(ST_GeometryN(geom_aea,1)),1) p from blk),
-        sq as (select ST_MakeEnvelope(ST_X(p), ST_Y(p), ST_X(p)+1000, ST_Y(p)+1000, 5070) g from corner)
-        select ST_Intersects((select geom_aea from blk), sq.g) and ST_Area(ST_Intersection((select geom_aea from blk), sq.g)) = 0,
-               coalesce((select est from geo.zone_pop_in(sq.g)), 0) from sq""")
-    assert share == 0 or touches is False
+def test_synthetic_single_point_touch_allocates_nobody(cur):
+    # SYNTHETIC: a 100 m block, the zone is the block itself, the target meets it at one corner only
+    touches, inter, share = one(cur, """
+        with g as (select ST_MakeEnvelope(0,0,100,100,5070) blk, ST_MakeEnvelope(100,100,200,200,5070) tgt)
+        select ST_Touches(blk, tgt), ST_Intersects(blk, tgt), geo.alloc_share(blk, blk, tgt) from g""")
+    assert touches is True and inter is True      # the fixture really is a point contact
+    assert share == 0
+
+
+def test_synthetic_joint_intersection_not_product_of_fractions(cur):
+    # SYNTHETIC (the judge's counterexample): zone = left half of the block, target = right half. The product of
+    # the two fractions would allocate 25%; the joint intersection has no area, so the share is 0.
+    share, = one(cur, """select geo.alloc_share(ST_MakeEnvelope(0,0,100,100,5070), ST_MakeEnvelope(0,0,50,100,5070),
+                                                 ST_MakeEnvelope(50,0,100,100,5070))""")
+    assert share == 0
+    half, = one(cur, """select geo.alloc_share(ST_MakeEnvelope(0,0,100,100,5070), ST_MakeEnvelope(0,0,100,100,5070),
+                                                ST_MakeEnvelope(50,0,100,100,5070))""")
+    assert abs(half - 0.5) < 1e-9
 
 
 def test_union_never_exceeds_zone_and_sum_double_counts(cur):
@@ -82,7 +93,7 @@ def test_noncommercial_rows_are_labelled_governance_not_equity(cur):
 
 def test_superseded_licensee_is_unresolved(cur):
     ev, = one(cur, "select evidence from geo.audit_result where callsign='KLVS'")
-    assert ev.startswith("unresolved: licensee changed")
+    assert ev.startswith("unresolved: licensee name differs")
 
 
 def test_missing_filing_is_never_read_as_not_diverse(cur):
@@ -148,7 +159,19 @@ def test_certified_export_separates_candidates_from_out_of_scope(cur):
                    where geo_status='qualifies' and policy_certified not like 'not established%' group by 1""")
     assert dict(cur.fetchall()) == {
         "needs confirmation: certification not established": "KRZZ,KSJO",
-        "not applicable: nonprofit or public body": "KEXC,KEXU-LP,KGPC-LP,KLVS,KPFA,KQED-FM"}
+        "not applicable: nonprofit or public body": "KALW,KALX,KCSM,KDFC,KEXC,KEXU-LP,KGPC-LP,KLVS,KPFA,KQED-FM"}
+
+
+def test_every_qualifying_nonprofit_is_out_of_certification_scope(cur):
+    # invariant over all 34 qualifying rows, not just the highlighted ones: scope is tested before evidence
+    n, = one(cur, """select count(*) from geo.audit_policy where geo_status='qualifies'
+                     and entity_type like 'nonprofit%' and policy_certified <> 'not applicable: nonprofit or public body'""")
+    assert n == 0
+    cur.execute("""select policy_certified, count(*) from geo.audit_policy where geo_status='qualifies' group by 1""")
+    counts = dict(cur.fetchall())
+    assert sum(counts.values()) == 34
+    assert counts == {"needs confirmation: certification not established": 2,
+                      "not applicable: nonprofit or public body": 10, "not established from these sources": 22}
 
 
 def test_kexc_is_read_with_the_licensee_at_the_report_date(cur):

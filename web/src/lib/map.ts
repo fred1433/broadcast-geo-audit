@@ -2,29 +2,29 @@ import { geoConicConformal, geoPath, type GeoPermissibleObjects, type GeoProject
 import geo from "@/data/geo.json";
 import contourData from "@/data/contours.json";
 
-export const MAP_W = 900;
-export const MAP_H = 860;
-export const INSET = { w: 330, h: 330 };
-
-// window = extent of the contours drawn by default (computed at export), so every drawn contour is whole
-const WINDOW: [[number, number], [number, number]] = [[geo.view[0], geo.view[1]], [geo.view[2], geo.view[3]]];
+// Main view: Oakland at city scale (the decision area). Inset: the region, for the full contour loops.
+export const CITY = { w: 900, h: 760 };
+export const REGION = { w: 300, h: 300 };
 
 type Geom = GeoPermissibleObjects;
 type Pos = [number, number];
+type Win = [[number, number], [number, number]];
 
-export type MapData = {
-  counties: { geoid: string; bay: boolean; d: string }[];
+export type View = {
+  land: string;
   countyLines: string;
-  oaklandLand: string;
-  oaklandLabel: Pos;
-  places: { name: string; x: number; y: number; anchor: "start" | "end" }[];
+  oakland: string;
   contours: Record<number, string>;
   anchors: Record<number, Pos[]>;
-  inset: { land: string; oakland: string; contours: Record<number, string>; anchors: Record<number, Pos[]>; scaleKm: number; scalePx: number };
-  scaleBar: { px: number; km: number };
+  scalePx: number;
+  scaleKm: number;
+};
+export type MapData = {
+  city: View;
+  region: View & { places: { name: string; x: number; y: number; anchor: "start" | "end" }[]; oaklandLabel: Pos; cityFrame: string };
 };
 
-function box(w: [[number, number], [number, number]]): Geom {
+function box(w: Win): Geom {
   // clockwise ring (d3-geo winding)
   return {
     type: "Polygon",
@@ -32,7 +32,7 @@ function box(w: [[number, number], [number, number]]): Geom {
   } as Geom;
 }
 
-function conic(size: [number, number], w: [[number, number], [number, number]]): GeoProjection {
+function conic(size: [number, number], w: Win): GeoProjection {
   // Lambert conformal conic on the standard parallels of California zone III, north up
   return geoConicConformal().parallels([37.0667, 38.4333]).rotate([120.5, 0]).fitSize(size, box(w));
 }
@@ -49,70 +49,57 @@ function kmToPx(pr: GeoProjection, lat: number, km: number, lon: number) {
   return Math.abs(b[0] - a[0]);
 }
 
-export function buildMap(): MapData {
-  const pr = conic([MAP_W, MAP_H], WINDOW);
+function view(size: { w: number; h: number }, win: Win, margin: number, scaleKm: number): { v: View; pr: GeoProjection } {
+  const pr = conic([size.w, size.h], win);
   const path = geoPath(pr);
   const p = (g: unknown) => path(g as Geom) ?? "";
-
   const contours: Record<number, string> = {};
   const anchors: Record<number, Pos[]> = {};
   for (const [id, g] of Object.entries(contourData)) {
     contours[Number(id)] = p(g);
-    // label candidates: the top, right, bottom and left extremes of the contour that fall inside the frame
     const pts = rings(g as { type: string; coordinates: unknown })
       .map((c) => pr(c) as Pos)
-      .filter((q) => q && q[0] > 60 && q[0] < MAP_W - 60 && q[1] > 24 && q[1] < MAP_H - 16);
-    if (!pts.length) { anchors[Number(id)] = []; continue; }
-    const step = Math.max(1, Math.floor(pts.length / 36));
-    const [ox, oy] = pr([-122.22, 37.79]) ?? [0, 0];
-    // prefer the upper part of the map and points far from the focal city
-    anchors[Number(id)] = pts.filter((_, i) => i % step === 0)
-      .sort((a, b) => (a[1] - Math.hypot(a[0] - ox, a[1] - oy) * 0.3) - (b[1] - Math.hypot(b[0] - ox, b[1] - oy) * 0.3));
+      .filter((q) => q && q[0] > margin && q[0] < size.w - margin && q[1] > margin && q[1] < size.h - margin);
+    const step = Math.max(1, Math.floor(pts.length / 40));
+    anchors[Number(id)] = pts.filter((_, i) => i % step === 0);
   }
+  return {
+    pr,
+    v: {
+      land: geo.counties.map((c) => p(c.geom)).join(""),
+      countyLines: geo.county_lines ? p(geo.county_lines) : "",
+      oakland: p(geo.oakland_land),
+      contours,
+      anchors,
+      scalePx: kmToPx(pr, win[0][1] + (win[1][1] - win[0][1]) * 0.1, scaleKm, (win[0][0] + win[1][0]) / 2),
+      scaleKm,
+    },
+  };
+}
 
-  // inset: the city at a scale where a contour edge crossing it can be read
+export function buildMap(): MapData {
   const ob = rings(geo.oakland_land as { type: string; coordinates: unknown });
   const xs = ob.map((q) => q[0]), ys = ob.map((q) => q[1]);
-  const pad = 0.035;
-  const iw: [[number, number], [number, number]] = [[Math.min(...xs) - pad, Math.min(...ys) - pad], [Math.max(...xs) + pad, Math.max(...ys) + pad]];
-  const ipr = conic([INSET.w, INSET.h], iw);
-  const ipath = geoPath(ipr);
-  const ip = (g: unknown) => ipath(g as Geom) ?? "";
-  const insetContours: Record<number, string> = {};
-  const insetAnchors: Record<number, Pos[]> = {};
-  for (const [id, g] of Object.entries(contourData)) {
-    insetContours[Number(id)] = ip(g);
-    // candidate label points: contour vertices inside the inset, ordered from the frame edges inwards
-    const pts = rings(g as { type: string; coordinates: unknown }).map((c) => ipr(c) as Pos)
-      .filter((q) => q && q[0] > 30 && q[0] < INSET.w - 30 && q[1] > 52 && q[1] < INSET.h - 12);
-    const step = Math.max(1, Math.floor(pts.length / 24));
-    insetAnchors[Number(id)] = pts.filter((_, i) => i % step === 0);
-  }
+  const cityWin: Win = [[Math.min(...xs) - 0.03, Math.min(...ys) - 0.018], [Math.max(...xs) + 0.03, Math.max(...ys) + 0.018]];
+  const city = view(CITY, cityWin, 40, 2).v;
 
-  const [lx, ly] = pr([-122.2, 37.78]) ?? [0, 0];
+  const regionWin: Win = [[geo.view[0], geo.view[1]], [geo.view[2], geo.view[3]]];
+  const r = view(REGION, regionWin, 14, 20);
   const labelLeft = new Set(["San Francisco", "San Mateo"]);
-
+  const cf = geoPath(r.pr)(box(cityWin)) ?? "";
+  const [lx, ly] = r.pr([-122.2, 37.78]) ?? [0, 0];
   return {
-    counties: geo.counties.map((c) => ({ geoid: c.geoid, bay: c.bay, d: p(c.geom) })),
-    countyLines: geo.county_lines ? p(geo.county_lines) : "",
-    oaklandLand: p(geo.oakland_land),
-    oaklandLabel: [lx, ly],
-    places: geo.places
-      .filter((pl) => pl.name !== "Berkeley")
-      .map((pl) => {
-        const [x, y] = pr([pl.lon, pl.lat]) ?? [0, 0];
-        return { name: pl.name, x, y, anchor: labelLeft.has(pl.name) ? "end" : "start" };
-      }),
-    contours,
-    anchors,
-    inset: {
-      land: geo.counties.map((c) => ip(c.geom)).join(""),
-      oakland: ip(geo.oakland_land),
-      contours: insetContours,
-      anchors: insetAnchors,
-      scaleKm: 5,
-      scalePx: kmToPx(ipr, 37.75, 5, -122.2),
+    city,
+    region: {
+      ...r.v,
+      cityFrame: cf,
+      oaklandLabel: [lx, ly],
+      places: geo.places
+        .filter((pl) => ["San Francisco", "San Jose", "Santa Rosa", "Livermore"].includes(pl.name))
+        .map((pl) => {
+          const [x, y] = r.pr([pl.lon, pl.lat]) ?? [0, 0];
+          return { name: pl.name, x, y, anchor: labelLeft.has(pl.name) ? "end" : "start" };
+        }),
     },
-    scaleBar: { px: kmToPx(pr, 37.3, 20, -122.27), km: 20 },
   };
 }

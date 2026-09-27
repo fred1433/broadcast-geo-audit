@@ -17,29 +17,43 @@ repository; `etl/00_download.sh` fetches them. The page ships a frozen export of
   (at least 50% of residents), then classifies ownership evidence under two export policies: research shortlist
   and certified export.
 
+The general drawn-area functions in `sql/20_functions.sql` are experimental and not validated by this audit.
+
 Decisions that the tests pin (see `tests/`): contours are the licensed record, not the largest on file; board
 majorities of nonprofits (Form 323-E) are never counted as ownership; nonprofits and public bodies are "not
 applicable" to ownership-based certification; a 2023 filing is read with the licensee of that date; missing or
 insufficient data stays unresolved; the union of contours is used, never the sum.
 
-## Rebuild
-Requirements: PostgreSQL 18 with PostGIS 3.6, GDAL (`ogr2ogr`), Python 3.12+, Node 20+.
+## Reproduce this run, or refresh it
+Two modes, kept apart on purpose:
+- **Reproduce** (default): `etl/00_download.sh` fetches the versioned public files listed in
+  `manifest/sources.json` and stops if a SHA-256 differs; the FCC inputs, whose URLs serve "current" data, are
+  restored from `evidence/` (contour and station-list extracts of Sept 26-27, 2026, and the FCC ownership workbooks).
+  The rebuilt export must match `web/src/data/` byte for byte.
+- **Refresh**: `etl/00_download.sh --refresh` takes today's FCC files. That is a new run: rerun
+  `etl/make_manifest.py` so the vintages shown on the page follow the new inputs.
+
+Requirements: PostgreSQL with PostGIS 3.x, GDAL (`ogr2ogr`), Python 3.12+, Node 20+. `bin/q` uses `PSQL`
+(client binary, default `psql`) and `GEO_DSN` (libpq string, default `host=/tmp port=5438 user=geo dbname=bay`).
 
 ```sh
-python3 -m venv .venv && .venv/bin/pip install geopandas pyogrio shapely pandas duckdb requests openpyxl pyarrow "psycopg[binary]" pytest
-./etl/00_download.sh                      # about 1.5 GB into data/raw; two FCC files need a browser (see script)
+python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
+./etl/00_download.sh                      # about 1.5 GB into data/raw, hashes verified
 initdb -D data/build/pg -U geo --auth=trust && pg_ctl -D data/build/pg -o "-p 5438 -k /tmp" start
 createdb -h /tmp -p 5438 -U geo bay && psql -h /tmp -p 5438 -U geo bay -c "create extension postgis"
-bin/rebuild                               # load, model, functions, audit (about 2 minutes)
-.venv/bin/python -m pytest -q tests       # 28 checks
-.venv/bin/python etl/03_export.py         # freeze results into web/src/data
-cd web && npm install && npm run build
+bin/rebuild                               # stops on the first failed load or SQL statement
+.venv/bin/python -m pytest -q tests
+.venv/bin/python etl/03_export.py && git diff --stat web/src/data web/public   # empty diff = reproduced
+cd web && npm ci && npm run build
 ```
 
+A clean-environment reproduction of this commit is recorded in `docs/rebuild_log.md`.
+
 ## Layout
-- `etl/` download, load (shell + Python), export
+- `etl/` download, load (shell + Python), manifest, export
+- `manifest/`, `evidence/` the inputs of this run
 - `sql/10_model.sql` the geographic model (analysis in EPSG:5070, crosswalks, empty slots for licensed data)
-- `sql/20_functions.sql` apportionment, naive comparisons, class mix, stations reaching a polygon
+- `sql/20_functions.sql` EXPERIMENTAL drawn-area helpers, outside the audit (ACS without margins of error)
 - `sql/30_oakland_audit.sql`, `sql/40_audit_decisions.sql` the audit and its policies
 - `tests/` foundation and audit checks
 - `web/` Next.js page (static)

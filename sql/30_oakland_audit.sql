@@ -19,6 +19,8 @@ select 'oakland' as id, 'Oakland city (Census place 0653000)' as label, geom, ge
 drop table if exists geo.audit_block;
 create table geo.audit_block as   -- blocks of the zone with allocation weight
 select b.geoid, b.pop, b.pt_aea, b.geom_aea,
+       case when ST_Within(b.geom_aea, z.geom_aea) then b.geom_aea
+            else ST_CollectionExtract(ST_Intersection(b.geom_aea, z.geom_aea), 3) end as geom_in,  -- part inside the zone
        case when ST_Within(b.geom_aea, z.geom_aea) then 1.0
             else ST_Area(ST_Intersection(b.geom_aea, z.geom_aea)) / nullif(ST_Area(b.geom_aea), 0) end as w,
        ST_Within(b.geom_aea, z.geom_aea) as inside
@@ -37,22 +39,34 @@ where c.band = 'FM' and s.facility_id in (
   where c2.band = 'FM' and s2.status = 'LIC' and s2.service in ('FM','FL','FX','FB')
     and ST_Intersects(ST_Transform(c2.geom, 5070), z.geom_aea));
 
--- residents of the zone inside one contour: estimate, low, high
+-- Share of a block's published population allocated to the JOINT intersection of a zone and a target:
+-- area(block ∩ zone ∩ target) / area(block). Never the product of two separate fractions: a block whose left
+-- half is the zone and right half the target gets 0, not 25%. Pure function, tested on synthetic geometries.
+create or replace function geo.alloc_share(block geometry, zone geometry, target geometry)
+returns float8 language sql immutable as $$
+  select case when ST_Area(block) = 0 then 0
+              else ST_Area(ST_Intersection(ST_Intersection(block, zone), target)) / ST_Area(block) end
+$$;
+
+-- residents of the zone inside one contour: allocation estimate and allocation bounds
+--   est  : sum of pop x area(block ∩ zone ∩ contour) / area(block)
+--   low  : blocks wholly inside both the zone and the contour
+--   high : every block with a positive-area part inside both (a shared edge or point does not count)
+-- Bounds describe the allocation of published 2020 counts, not a confidence interval.
 create or replace function geo.zone_pop_in(g geometry)
 returns table (est numeric, low numeric, high numeric) language sql stable as $$
-  select round(sum(b.pop * b.w * f.frac)::numeric),
-         sum(b.pop) filter (where b.inside and f.frac = 1),
-         sum(b.pop) filter (where f.frac > 0 and b.w > 0)  -- a block that only shares an edge is not "in"
+  select round(sum(b.pop * f.frac)::numeric),
+         coalesce(sum(b.pop) filter (where b.inside and ST_Within(b.geom_aea, g)), 0),
+         coalesce(sum(b.pop) filter (where f.frac > 0), 0)
   from geo.audit_block b
-  cross join lateral (select case when ST_Within(b.geom_aea, g) then 1.0
-                                  when ST_Intersects(b.geom_aea, g) then ST_Area(ST_Intersection(b.geom_aea, g)) / nullif(ST_Area(b.geom_aea),0)
-                                  else 0 end as frac) f
-  where ST_Intersects(b.geom_aea, g)
+  cross join lateral (select case when b.inside and ST_Within(b.geom_aea, g) then 1.0
+                                  else ST_Area(ST_Intersection(b.geom_in, g)) / nullif(ST_Area(b.geom_aea), 0) end as frac) f
+  where b.w > 0 and ST_Intersects(b.geom_in, g)
 $$;
 
 drop table if exists geo.audit_station;
 create table geo.audit_station as
-with zone_total as (select sum(pop * w) as p, sum(pop) filter (where inside) as low, sum(pop) as high from geo.audit_block),
+with zone_total as (select sum(pop * w) as p, sum(pop) filter (where inside) as low, sum(pop) filter (where w > 0) as high from geo.audit_block),
 lic as (   -- the licensed main contour (one per facility; DTS/multi-record would be unioned)
   select facility_id, min(callsign) callsign, min(service) service, min(licensee) licensee,
          min(community_of_license) col, ST_Union(geom_aea) g, max(km2) km2, string_agg(application_id, ',') app_ids

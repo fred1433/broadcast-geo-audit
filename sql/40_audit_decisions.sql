@@ -20,7 +20,7 @@ base as (
          -- protected contour: 54 dBu class B, 57 dBu class B1, 60 dBu otherwise and for every reserved-band
          -- (88.1-91.9 MHz) noncommercial station (FCC, FM station classes and service contours)
          case when c.mhz < 92 then 60 when c.station_class = 'B' then 54 when c.station_class = 'B1' then 57 else 60 end as contour_dbu,
-         o.report_file,
+         o.report_file, o.workbook, o.row_t12, o.row_t34,
          regexp_replace(trim(o.licensee_2023), '\s+', ' ', 'g') as licensee_in_report,            -- licensee on 10/1/2023: the one the data describes
          coalesce(nullif(o.callsign_2023, ''), o.callsign_dec2024) as callsign_in_report,
          o.maj_racial_and_or_ethnic_minority as maj_minority, o.maj_female, o.maj_hispanic,
@@ -56,7 +56,9 @@ select b.*,
     when b.report_file is null then 'unresolved: no row in the 2023 report'
     when b.maj_insufficient_data = 1 then 'unresolved: the FCC marks this filing "insufficient data"'
     when b.maj_not_filed = 1 then 'unresolved: not filed'
-    when b.licensee_changed then 'unresolved: licensee changed after the report'
+    -- a name comparison only: a different name does not prove a change of control, and the same name does not
+    -- prove unchanged ownership (a parent transaction can leave the licensee's name intact)
+    when b.licensee_changed then 'unresolved: licensee name differs from the report'
     when (b.maj_minority = 1 or b.maj_female = 1) and b.report_file like '%Noncommercial%' then 'reported board majority'
     when b.maj_minority = 1 or b.maj_female = 1 then 'reported ownership majority'
     else 'no reported majority minority or women interest' end as evidence
@@ -76,7 +78,7 @@ select r.*,
        when r.evidence like 'unresolved%' then 'needs confirmation'
        else 'not established from these sources' end as policy_research,
   case when r.geo_status <> 'qualifies' then 'out: geographic rule'
+       when r.entity_type like 'nonprofit%' then 'not applicable: nonprofit or public body'   -- scope first
        when r.evidence like 'no reported majority%' then 'not established from these sources'
-       when r.entity_type like 'nonprofit%' then 'not applicable: nonprofit or public body'
        else 'needs confirmation: certification not established' end as policy_certified
 from geo.audit_result r;

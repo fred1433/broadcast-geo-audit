@@ -1,0 +1,233 @@
+{
+ "run": "oakland-fm-audit 2026-09-27",
+ "sources": [
+  {
+   "file": "tl_2025_us_county.zip",
+   "url": "https://www2.census.gov/geo/tiger/TIGER2025/COUNTY/tl_2025_us_county.zip",
+   "vintage": "TIGER/Line 2025 (boundaries as of 2025-01-01)",
+   "retrieved": "2026-09-27",
+   "bytes": 83989800,
+   "sha256": "9c6e9d9076abce2670d1de255de3710c35ecca00a7005d88e012dec52d95f763",
+   "kept": "no (versioned public file, fetched and verified by hash)"
+  },
+  {
+   "file": "tl_2025_us_zcta520.zip",
+   "url": "https://www2.census.gov/geo/tiger/TIGER2025/ZCTA520/tl_2025_us_zcta520.zip",
+   "vintage": "TIGER/Line 2025, 2020 ZCTAs",
+   "retrieved": "2026-09-27",
+   "bytes": 529118424,
+   "sha256": "e87129634eefe8719ef06ce4cfdf6588520be2e359360e590aaae90e4afb1911",
+   "kept": "no (versioned public file, fetched and verified by hash)"
+  },
+  {
+   "file": "tl_2025_06_tract.zip",
+   "url": "https://www2.census.gov/geo/tiger/TIGER2025/TRACT/tl_2025_06_tract.zip",
+   "vintage": "TIGER/Line 2025",
+   "retrieved": "2026-09-27",
+   "bytes": 32558476,
+   "sha256": "33fa2b2c74ae8cafe5e4059a8cf68c6dece441fc0311374c9aafb54187e1ce23",
+   "kept": "no (versioned public file, fetched and verified by hash)"
+  },
+  {
+   "file": "tl_2025_06_bg.zip",
+   "url": "https://www2.census.gov/geo/tiger/TIGER2025/BG/tl_2025_06_bg.zip",
+   "vintage": "TIGER/Line 2025",
+   "retrieved": "2026-09-27",
+   "bytes": 52918117,
+   "sha256": "f8297c7e57e1da7c2696b4f53623eac5d7b2213c5c36a399f355c7c3ecd6c03c",
+   "kept": "no (versioned public file, fetched and verified by hash)"
+  },
+  {
+   "file": "tl_2025_06_place.zip",
+   "url": "https://www2.census.gov/geo/tiger/TIGER2025/PLACE/tl_2025_06_place.zip",
+   "vintage": "TIGER/Line 2025 (boundaries as of 2025-01-01)",
+   "retrieved": "2026-09-27",
+   "bytes": 9885068,
+   "sha256": "2b59dc5d54c69c7a451795401fc2a1c1c68b172f1d912d3486080e04a83e23e8",
+   "kept": "no (versioned public file, fetched and verified by hash)"
+  },
+  {
+   "file": "tl_2025_us_cbsa.zip",
+   "url": "https://www2.census.gov/geo/tiger/TIGER2025/CBSA/tl_2025_us_cbsa.zip",
+   "vintage": "TIGER/Line 2025 (OMB July 2023)",
+   "retrieved": "2026-09-27",
+   "bytes": 34964000,
+   "sha256": "8b0424f077280caaa5e09442fd0b0aec32b3e8d7d5fa909988304663bc0a761d",
+   "kept": "no (versioned public file, fetched and verified by hash)"
+  },
+  {
+   "file": "tl_2025_us_csa.zip",
+   "url": "https://www2.census.gov/geo/tiger/TIGER2025/CSA/tl_2025_us_csa.zip",
+   "vintage": "TIGER/Line 2025 (OMB July 2023)",
+   "retrieved": "2026-09-27",
+   "bytes": 13048873,
+   "sha256": "47f43421f16a020c800fed07dd362e839cd07d801a85cb7bb3a49b93a903c04e",
+   "kept": "no (versioned public file, fetched and verified by hash)"
+  },
+  {
+   "file": "tl_2025_us_uac20.zip",
+   "url": "https://www2.census.gov/geo/tiger/TIGER2025/UAC20/tl_2025_us_uac20.zip",
+   "vintage": "TIGER/Line 2025, 2020 urban areas",
+   "retrieved": "2026-09-27",
+   "bytes": 73933166,
+   "sha256": "e28a0b738230496b66038756a80eb1f04f9bf8c622dc2578ee46f885bb1c059c",
+   "kept": "no (versioned public file, fetched and verified by hash)"
+  },
+  {
+   "file": "tl_2025_06_tabblock20.zip",
+   "url": "https://www2.census.gov/geo/tiger/TIGER2025/TABBLOCK20/tl_2025_06_tabblock20.zip",
+   "vintage": "TIGER/Line 2025, 2020 blocks with 2020 Census counts",
+   "retrieved": "2026-09-27",
+   "bytes": 385406476,
+   "sha256": "3d80db701d358e521c97caefa930fcc810030d56da7fa39eaf248a9b0c9814f1",
+   "kept": "no (versioned public file, fetched and verified by hash)"
+  },
+  {
+   "file": "cb_2024_us_county_500k.zip",
+   "url": "https://www2.census.gov/geo/tiger/GENZ2024/shp/cb_2024_us_county_500k.zip",
+   "vintage": "Cartographic boundaries 2024 (display only)",
+   "retrieved": "2026-09-27",
+   "bytes": 11626066,
+   "sha256": "da4051717caec55c75e3748c3608c2a3dbde8d1ff401bbaf4f952e3c3fb63ef1",
+   "kept": "no (versioned public file, fetched and verified by hash)"
+  },
+  {
+   "file": "tab20_zcta520_county20_natl.txt",
+   "url": "https://www2.census.gov/geo/docs/maps-data/data/rel2020/zcta520/tab20_zcta520_county20_natl.txt",
+   "vintage": "2020 relationship file",
+   "retrieved": "2026-09-27",
+   "bytes": 6821287,
+   "sha256": "3ed41278d637dc249e0323306f68be8a6c234e3090f4de88ef328dee71aeaaaf",
+   "kept": "no (versioned public file, fetched and verified by hash)"
+  },
+  {
+   "file": "tab20_zcta520_tract20_natl.txt",
+   "url": "https://www2.census.gov/geo/docs/maps-data/data/rel2020/zcta520/tab20_zcta520_tract20_natl.txt",
+   "vintage": "2020 relationship file",
+   "retrieved": "2026-09-27",
+   "bytes": 24334353,
+   "sha256": "6a25d8c3fff4cf612c4d2dccc2c0cd6cb5bc99b807ff3d5d107a2e9b9d68dde0",
+   "kept": "no (versioned public file, fetched and verified by hash)"
+  },
+  {
+   "file": "ruca2020_tract.csv",
+   "url": "https://www.ers.usda.gov/media/5443/2020-rural-urban-commuting-area-codes-census-tracts.csv",
+   "vintage": "USDA ERS RUCA 2020, tract file",
+   "retrieved": "2026-09-27",
+   "bytes": 25031067,
+   "sha256": "e056ee1bcf387e39c220f20a506801030c1105351fa8a1bb814d0a686013a8a8",
+   "kept": "no (versioned public file, fetched and verified by hash)"
+  },
+  {
+   "file": "ruca2020_zip.csv",
+   "url": "https://www.ers.usda.gov/media/5444/2020-rural-urban-commuting-area-codes-zip-codes.csv",
+   "vintage": "USDA ERS RUCA 2020, ZIP file",
+   "retrieved": "2026-09-27",
+   "bytes": 1775609,
+   "sha256": "b7fce586b30bc89aee4219cd06cf319c35186773250297b0a83efdedfd79b095",
+   "kept": "no (versioned public file, fetched and verified by hash)"
+  },
+  {
+   "file": "acsdt5y2024-b01003.dat",
+   "url": "https://www2.census.gov/programs-surveys/acs/summary_file/2024/table-based-SF/data/5YRData/acsdt5y2024-b01003.dat",
+   "vintage": "ACS 2020-2024 5-year",
+   "retrieved": "2026-09-27",
+   "bytes": 18313708,
+   "sha256": "38d1a992bb058d184009b10b9b34987279aee575e4323165cfb5706c69b6ca90",
+   "kept": "no (versioned public file, fetched and verified by hash)"
+  },
+  {
+   "file": "acsdt5y2024-b11001.dat",
+   "url": "https://www2.census.gov/programs-surveys/acs/summary_file/2024/table-based-SF/data/5YRData/acsdt5y2024-b11001.dat",
+   "vintage": "ACS 2020-2024 5-year",
+   "retrieved": "2026-09-27",
+   "bytes": 45827971,
+   "sha256": "77200c3d9c0d99773bc7f78208bc96f25170e5d4d175a5de320620b478ceaff5",
+   "kept": "no (versioned public file, fetched and verified by hash)"
+  },
+  {
+   "file": "acsdt5y2024-b03002.dat",
+   "url": "https://www2.census.gov/programs-surveys/acs/summary_file/2024/table-based-SF/data/5YRData/acsdt5y2024-b03002.dat",
+   "vintage": "ACS 2020-2024 5-year",
+   "retrieved": "2026-09-27",
+   "bytes": 83256772,
+   "sha256": "ef1a9310905393bf477820de8edb2935c1e9bdb356be65b5ee5fb6fceda911c1",
+   "kept": "no (versioned public file, fetched and verified by hash)"
+  },
+  {
+   "file": "acsdt5y2024-b19001.dat",
+   "url": "https://www2.census.gov/programs-surveys/acs/summary_file/2024/table-based-SF/data/5YRData/acsdt5y2024-b19001.dat",
+   "vintage": "ACS 2020-2024 5-year",
+   "retrieved": "2026-09-27",
+   "bytes": 68953041,
+   "sha256": "1af421b3b9d0f85dbd938cd518ad5d01c693fa2870f24e1089552ea5c1e6683f",
+   "kept": "no (versioned public file, fetched and verified by hash)"
+  },
+  {
+   "file": "FM_service_contour_current.zip",
+   "url": "https://transition.fcc.gov/bureaus/mb/databases/map/FM_service_contour_current.zip",
+   "vintage": "FCC daily file of 2026-09-26 (active records)",
+   "retrieved": "2026-09-27",
+   "bytes": 64965454,
+   "sha256": "f352ddec8a811d976d71d235af5113e6636359f0be774d316cdcb2ff206c19e7",
+   "kept": "extract: contours intersecting the study window, same format",
+   "evidence_file": "fm_contours_bay_20260926.txt.gz",
+   "evidence_sha256": "044432f8cf497d21cff8722276d5df2e09c6745c66ef47d110920876ec476076"
+  },
+  {
+   "file": "TV_service_contour_current.zip",
+   "url": "https://transition.fcc.gov/bureaus/mb/databases/map/TV_service_contour_current.zip",
+   "vintage": "FCC daily file of 2026-09-26 (active records)",
+   "retrieved": "2026-09-27",
+   "bytes": 26923983,
+   "sha256": "e8ac858776dcca4dfd0bc04ab800028aa7754fd64fcce2db5a18dd983ea91d4b",
+   "kept": "extract: contours intersecting the study window, same format",
+   "evidence_file": "tv_contours_bay_20260926.txt.gz",
+   "evidence_sha256": "4aaee8d6e5369a671d452aecb0653adae5884d3536803390896fa8a28e29190f"
+  },
+  {
+   "file": "fmq_CA.txt",
+   "url": "https://transition.fcc.gov/fcc-bin/fmq?state=CA&list=4&size=9",
+   "vintage": "FCC FM Query, California, retrieved 2026-09-27",
+   "retrieved": "2026-09-27",
+   "bytes": 1145612,
+   "sha256": "69df5ed62d3c58f2adb78640006681f19f9bce7570839f0f938f39c3b6cb850c",
+   "kept": "full file, gzipped",
+   "evidence_file": "fmq_CA_20260927.txt.gz",
+   "evidence_sha256": "a9c3ca6185ac0681e5ce2e37d941983b02d4c6e18fb346ee7a30f6d6c79fc157"
+  },
+  {
+   "file": "tvq_CA.txt",
+   "url": "https://transition.fcc.gov/fcc-bin/tvq?state=CA&list=4&size=9",
+   "vintage": "FCC TV Query, California, retrieved 2026-09-27",
+   "retrieved": "2026-09-27",
+   "bytes": 358951,
+   "sha256": "e59ddd5f802996d8e6750c5252315755d9678a488ae465e6980a3fdd7a5307fb",
+   "kept": "full file, gzipped",
+   "evidence_file": "tvq_CA_20260927.txt.gz",
+   "evidence_sha256": "b69ffd9b6e1329fb4b76ebba55e62c4dbbe1ac0f9f76e7cca5b581c416f3e1fb"
+  },
+  {
+   "file": "fcc323_2023.zip",
+   "url": "https://www.fcc.gov/sites/default/files/323-spreadsheets.zip",
+   "vintage": "FCC Form 323 report tables, data as of 2023-10-01 (released Jan 2025)",
+   "retrieved": "2026-09-27",
+   "bytes": 2540532,
+   "sha256": "76f9dbb2307cdd6041f2abf7d648df4948d665ac143a424bf5bea25b1fa23f82",
+   "kept": "full file (US government work)",
+   "evidence_file": "fcc323_2023.zip",
+   "evidence_sha256": "76f9dbb2307cdd6041f2abf7d648df4948d665ac143a424bf5bea25b1fa23f82"
+  },
+  {
+   "file": "fcc323e_2023.zip",
+   "url": "https://www.fcc.gov/sites/default/files/323-e-spreadsheets.zip",
+   "vintage": "FCC Form 323-E report tables, data as of 2023-10-01 (released Jan 2025)",
+   "retrieved": "2026-09-27",
+   "bytes": 1235377,
+   "sha256": "2dddaef3bccb6878d964b4301a8c69ef14befcd6afb92f992299aa021edf7383",
+   "kept": "full file (US government work)",
+   "evidence_file": "fcc323e_2023.zip",
+   "evidence_sha256": "2dddaef3bccb6878d964b4301a8c69ef14befcd6afb92f992299aa021edf7383"
+  }
+ ]
+}

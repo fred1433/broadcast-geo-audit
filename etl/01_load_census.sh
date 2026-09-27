@@ -3,8 +3,12 @@
 # Sources (all public, no key): TIGER/Line 2025, 2020 block relationship files, USDA ERS RUCA 2020.
 set -euo pipefail
 cd "$(dirname "$0")/.."
-PG="PG:host=/tmp port=5438 user=geo dbname=bay"
-PSQL=(/opt/homebrew/opt/postgresql@18/bin/psql -h /tmp -p 5438 -U geo -d bay -v ON_ERROR_STOP=1 -q)
+PG="PG:${GEO_DSN:-host=/tmp port=5438 user=geo dbname=bay}"
+PSQL=(bin/q)
+for f in tl_2025_us_county tl_2025_06_tract tl_2025_06_bg tl_2025_06_tabblock20 tl_2025_06_place tl_2025_us_zcta520 \
+         tl_2025_us_cbsa tl_2025_us_csa tl_2025_us_uac20; do
+  [[ -f data/raw/$f/$f.shp ]] || { echo "missing data/raw/$f/$f.shp (run etl/00_download.sh)" >&2; exit 1; }
+done
 R=data/raw
 COUNTIES="'001','013','041','055','075','081','085','095','097'"
 # blocks also for the seven neighbouring counties that share a ZCTA with the nine (from the relationship file)
@@ -16,7 +20,7 @@ BBOX=(-123.64 36.89 -121.20 38.87)
 
 load() { # $1 layer path, $2 table, rest = extra ogr2ogr args
   local src=$1 tbl=$2; shift 2
-  ogr2ogr -f PostgreSQL "$PG" "$src" -nln raw.$tbl -overwrite -lco GEOMETRY_NAME=geom -lco FID=gid \
+  ogr2ogr -q -f PostgreSQL "$PG" "$src" -nln raw.$tbl -overwrite -lco GEOMETRY_NAME=geom -lco FID=gid \
     -nlt PROMOTE_TO_MULTI -lco PRECISION=NO "$@"
 }
 

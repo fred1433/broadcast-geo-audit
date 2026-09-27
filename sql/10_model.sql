@@ -102,9 +102,11 @@ from raw.rel_zcta_county r
 left join pop p on p.zcta = r.zcta and p.county_geoid = r.county
 where r.zcta in (select zcta from geo.zcta) and r.county <> '';
 
--- ZIP (USPS) -> ZCTA. Not free of ambiguity: PO-box and unique ZIPs have no ZCTA. The production table is
--- HUD-USPS ZIP crosswalk (free registration, quarterly). Here: the USDA RUCA 2020 ZIP file lists every
--- ZIP with its type, which is enough to show the gap.
+-- USPS ZIP codes, described only. A ZIP is a delivery route, a ZCTA a Census area built from blocks; same code
+-- does not mean same area, and PO-box ZIPs usually have no ZCTA. There is no official ZIP to ZCTA population
+-- crosswalk: HUD-USPS relates ZIPs to tracts, counties and CBSAs with address-based ratios, which is a different
+-- relationship. This table lists every California ZIP with its type (USDA RUCA 2020 ZIP file) and whether a ZCTA
+-- with the same code exists; it is descriptive, not a crosswalk.
 create table geo.zip as
 select zip, state, zip_type, po_name, primaryruca as ruca_zip,
        (select zcta from geo.zcta z where z.zcta = r.zip) as same_code_zcta,
@@ -173,8 +175,10 @@ select * , 'FCC Report on Ownership of Broadcast Stations, data as of 2023-10-01
 from raw.fcc_323_2023;
 
 -- Slots for licensed / proprietary data the client already owns. Empty on purpose.
+-- Deliberately partial, county-level placeholder. Nielsen defines DMAs from counties and ZIP codes and licenses
+-- ZIP-level assignments and shapefiles; a licensed load would add the ZIP grain and the vintage.
 create table geo.dma_county (county_geoid text primary key, dma_code text, dma_name text, vintage text,
-  note text default 'Nielsen DMA membership: whole counties only, loaded from the client licence');
+  note text default 'Partial county-level placeholder for licensed Nielsen DMA data');
 create table geo.certification (subject_uid text, scheme text check (scheme in ('NMSDC','WBENC','NGLCC','Disability:IN','NaVOBA','other')),
   certificate_id text, certified_entity text, valid_from date, valid_to date, verified_on date, verification_source text,
   note text default 'Certification is evidence of its own kind: scheme, certificate, validity. Never derived from FCC filings.');

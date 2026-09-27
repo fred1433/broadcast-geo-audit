@@ -15,7 +15,7 @@ import psycopg
 from shapely.geometry import Polygon, box
 
 RAW = os.path.join(os.path.dirname(__file__), "..", "data", "raw")
-DSN = "host=/tmp port=5438 user=geo dbname=bay"
+DSN = os.environ.get("GEO_DSN", "host=/tmp port=5438 user=geo dbname=bay")
 # nine-county bbox, widened by ~1 degree so every contour that can touch the area is kept
 AREA = box(-124.6, 35.9, -120.2, 39.9)
 
@@ -85,8 +85,11 @@ def load_323():
         m = maj[["FCC ID"] + keep_maj]
         m.columns = ["facility_id"] + ["maj_" + c.lower().replace(" / ", "_").replace(" ", "_").replace("/", "_")
                                        for c in keep_maj]
+        a = a.assign(row_t12=any_.index + 3)   # Excel row in sheet "Tables 1 and 2" (2 header rows)
+        m = m.assign(row_t34=maj.index + 3)    # Excel row in sheet "Tables 3 and 4"
         d = a.merge(m, on="facility_id", how="outer")
         d["report_file"] = kind
+        d["workbook"] = os.path.relpath(path, RAW)
         frames.append(d)
     return pd.concat(frames, ignore_index=True)
 
@@ -143,7 +146,7 @@ def main():
                     "update raw.fcc_contour set geom = ST_Multi(ST_CollectionExtract(ST_MakeValid(ST_GeomFromText(wkt,4269)),3));")
         own_cols = list(own.columns)
         copy_df(cur, own, "raw.fcc_323_2023", ", ".join(
-            f"{c} {'int' if c.startswith(('any_', 'maj_')) or c == 'facility_id' else 'text'}" for c in own_cols))
+            f"{c} {'int' if c.startswith(('any_', 'maj_', 'row_')) or c == 'facility_id' else 'text'}" for c in own_cols))
         copy_df(cur, acs, "raw.acs5_2024", ", ".join(
             [f"{c} {'text' if c == 'geo_id' else 'float8'}" for c in acs.columns]))
     print(len(stations), "stations in list;", len(cont), "contours near the bay;", len(own), "323 rows;",

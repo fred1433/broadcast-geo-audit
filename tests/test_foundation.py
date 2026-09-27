@@ -1,9 +1,11 @@
 """Checks of the geographic foundation against published truths and against its own invariants.
 Run: .venv/bin/python -m pytest -q tests   (needs the local PostGIS on port 5438 built by etl/ + sql/)."""
+import os
+
 import psycopg
 import pytest
 
-DSN = "host=/tmp port=5438 user=geo dbname=bay"
+DSN = os.environ.get("GEO_DSN", "host=/tmp port=5438 user=geo dbname=bay")
 
 # 2020 Census (P.L. 94-171) county totals, as published by the Census Bureau.
 OFFICIAL_2020 = {"06001": 1682353, "06013": 1165927, "06041": 262321, "06055": 138019, "06075": 873965,
