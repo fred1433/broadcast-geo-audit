@@ -1,0 +1,12 @@
+.venv/
+data/raw/
+data/build/
+shots/node_modules/
+shots/*.png
+node_modules/
+.next/
+.vercel/
+.DS_Store
+__pycache__/
+*.pyc
+.pytest_cache/

@@ -1,0 +1,2 @@
+#!/bin/sh
+exec /opt/homebrew/opt/postgresql@18/bin/psql -h /tmp -p 5438 -U geo -d bay -X -P pager=off "$@"

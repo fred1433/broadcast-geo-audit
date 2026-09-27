@@ -1,0 +1,10 @@
+#!/bin/zsh
+# Full rebuild from data/raw: load, model, functions, audit. Idempotent.
+set -euo pipefail
+cd "$(dirname "$0")/.."
+./etl/01_load_census.sh 2>&1 | grep -v -E "^Warning 1: |NOTICE" || true
+./.venv/bin/python etl/02_load_fcc_acs.py
+for f in sql/10_model.sql sql/20_functions.sql sql/zones.sql sql/30_oakland_audit.sql sql/40_audit_decisions.sql; do
+  bin/q -q -v ON_ERROR_STOP=1 -f $f 2>&1 | grep -v -E "NOTICE|cascade|DÉTAIL" || true
+done
+echo rebuilt
